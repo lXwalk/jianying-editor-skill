@@ -373,18 +373,19 @@ class JyProject:
             content_path = os.path.join(draft_path, "draft_content.json")
             meta_path = os.path.join(draft_path, "draft_meta_info.json")
             
-            # 如果缺少关键文件，视为损坏
+            # 如果缺少关键文件，视为损坏 (仅在 overwrite 模式下自动修复)
             if not os.path.exists(content_path) or not os.path.exists(meta_path):
-                print(f"⚠️ Corrupted draft detected (missing json): {project_name}")
-                print(f"🧹 Auto-healing: Removing corrupted folder...")
-                try:
-                    shutil.rmtree(draft_path, ignore_errors=True)
-                    has_draft = False
-                except Exception as e:
-                    print(f"❌ Failed to cleanup corrupted draft: {e}")
-                    # 如果删不掉（权限/占用），只能尝试换个名字或者强制覆盖?
-                    # 这里如果是 overwrite=True 模式，后面 create_draft 会再次尝试处理
-                    pass
+                if overwrite:
+                    print(f"Corrupted draft detected (missing json): {project_name}")
+                    print(f"Auto-healing: Removing corrupted folder...")
+                    try:
+                        shutil.rmtree(draft_path, ignore_errors=True)
+                        has_draft = False
+                    except Exception as e:
+                        print(f"Failed to cleanup corrupted draft: {e}")
+                        pass
+                else:
+                    print(f"Corrupted draft detected: {project_name} (missing json). Use overwrite=True to auto-fix.")
 
         if has_draft and not overwrite:
             print(f"Loading existing project: {project_name}")
@@ -469,7 +470,11 @@ class JyProject:
         
         if os.path.exists(target_path):
             if overwrite:
-                shutil.rmtree(target_path)
+                try:
+                    shutil.rmtree(target_path)
+                except PermissionError:
+                    print(f"\n  [!] 剪映正在占用项目 '{project_name}'，请先关闭剪映中的草稿。")
+                    raise
             else:
                 raise FileExistsError(f"Project '{project_name}' already exists.")
         

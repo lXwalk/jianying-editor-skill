@@ -26,9 +26,12 @@ try:
     from jy_wrapper import JyProject
     from api_client import AntigravityClient
 except ImportError as e:
-    print(f"[-] Environment Error: {e}")
-    print(f"search path: {sys.path}")
-    sys.exit(1)
+    import warnings
+    warnings.warn(f"[smart_rough_cut] Optional dependency missing: {e}. "
+                  f"This script requires 'antigravity-api-skill'. "
+                  f"Functions in this module will not be available.")
+    JyProject = None
+    AntigravityClient = None
 
 # --- 2. 视频分析逻辑 ---
 def analyze_video_content(video_path):

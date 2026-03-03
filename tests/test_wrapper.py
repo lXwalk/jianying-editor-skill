@@ -35,7 +35,7 @@ class TestJyWrapper(unittest.TestCase):
 
     def test_02_add_text_simple(self):
         """测试文本添加与模糊匹配"""
-        p = JyProject("TestText", drafts_root=self.test_output)
+        p = JyProject("TestText", drafts_root=self.test_output, overwrite=True)
         # 测试模糊匹配 "Typewriter" -> "复古打字机"
         seg = p.add_text_simple("Hello", "0s", "3s", anim_in="Typewriter")
         self.assertIsNotNone(seg)
@@ -46,7 +46,8 @@ class TestJyWrapper(unittest.TestCase):
         
         found = False
         for track in tracks_iter:
-            if hasattr(track, 'type') and track.type == draft.TrackType.text:
+            t_type = getattr(track, 'track_type', None) or getattr(track, 'type', None)
+            if t_type == draft.TrackType.text:
                 if len(track.segments) > 0:
                     found = True
                     break
