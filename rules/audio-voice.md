@@ -29,11 +29,16 @@ async def generate_voice(text, output_path):
 ```
 
 ## 2. JianYing Internal BGM (Native Integration)
-This is the **preferred** way to use BGM.
-- **Workflow**: 
-    1. AI tells User: "Please search and play [Music Name] in JianYing once."
-    2. AI/User runs: `python scripts/sync_jy_assets.py` to index the cache.
-    3. AI uses `asset_search.py` (checks `jy_cached_audio.csv`) to get local path.
+This is the **preferred** way to use BGM to ensure copyright compliance and quality.
+
+### 🛠️ 用户端操作流程 (User Guide):
+1.  **找歌**：在剪映专业版左上角点击“音频”，在搜索框输入关键词（如“科技”、“Vlog”）。
+2.  **缓存**：**点击播放**你心仪的音乐。这一步至关重要，它能将音乐下载到本地缓存。
+3.  **同步**：告诉 AI “同步剪映音乐”，AI 会运行 `python scripts/sync_jy_assets.py`。
+4.  **使用**：AI 现在可以通过 `identifier`（通常是歌名或 ID）在本地 `jy_cached_audio.csv` 中找到物理路径并添加。
+
+### 🤖 AI 指引策略:
+- 如果用户说“我想要某某风格的音乐”，AI 应回复：“请在剪映中搜索该风格并**播放一次**，然后告诉我‘同步音乐’，我就可以为你自动添加了。”
 
 ## 3. Web Sourcing (Fallback)
 If native assets are missing after sync, source royalty-free music from the web.
