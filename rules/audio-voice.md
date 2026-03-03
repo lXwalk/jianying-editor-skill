@@ -45,20 +45,25 @@ This is the **preferred** way to use BGM to ensure copyright compliance and qual
 
 ## 3. 音乐库文件说明 (Data Context)
 - `data/jy_cached_audio.csv`: **核心资产**。包含已同步到 Skill 目录的物理文件路径。
-- `data/cloud_music_library.csv`: **增强索引**。包含从历史工程中扫描到的 `music_id` 和分类。用于在用户通过关键词搜索时提供候选建议。
+- `data/cloud_music_library.csv`: **云端音乐索引**。
+- `data/cloud_sound_effects.csv`: **云端音效索引 (SFX)**。
 
-### 云端音乐 API
-当音乐仅在云端索引中（无本地缓存）时，使用 `add_cloud_music` 方法：
+### 音频云端 API
+| 素材类型       | 检索文件                  | 使用方法                                |
+| :------------- | :------------------------ | :-------------------------------------- |
+| 背景音乐 (BGM) | `cloud_music_library.csv` | `project.add_cloud_music(music_id=...)` |
+| 音乐音效 (SFX) | `cloud_sound_effects.csv` | `project.add_cloud_sfx(effect_id=...)`  |
+
+#### 示例：添加云端音效
 ```python
-project.add_cloud_music(
-    music_id="7377843352954243081",
-    name="商务宣传 科技 产品展示",
-    duration_s=25,     # 裁剪到所需时长
-    start_time="0s",
-    track_name="BGM"
+project.add_cloud_sfx(
+    effect_id="7135753343380606242",
+    name="Windows 开机",
+    duration_s=3.87,
+    start_time="5s"
 )
 ```
-生成后用户需进入剪映草稿点击同步下载音乐文件。
+生成后用户需进入剪映草稿点击同步下载资源。
 
 ## 4. Web Sourcing (Fallback)
 If native assets are missing after sync, source royalty-free music from the web.

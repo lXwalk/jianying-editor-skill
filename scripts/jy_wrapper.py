@@ -351,7 +351,7 @@ class JyProject:
         self.name = project_name
         self.draft_dir = os.path.join(self.root, self.name)
         self._internal_colors = [] # 新增：用于追踪内部生成的色块
-        self._cloud_music_patches = {} # 新增：用于追踪云端音乐映射 {dummy_path: music_id}
+        self._cloud_audio_patches = {} # 新增：用于追踪云端音频映射 {dummy_path: {"id": id, "type": "music"|"sfx"}}
         
         # 是否显式指定了分辨率 (如果用户传入的不是默认值，则视为显式指定)
         self._explicit_res = (width != 1920 or height != 1080)
@@ -750,13 +750,13 @@ class JyProject:
         except Exception as e:
             print(f"⚠️  Force activation failed: {e}")
 
-    def _patch_cloud_music_ids(self):
+    def _patch_cloud_audio_ids(self):
         """
-        [协议级补丁]: 扫描 JSON 并强行注入 music_id。
-        因为本地库不原生支持添加不存在的云端音乐。
+        [协议级补丁]: 扫描 JSON 并强行注入 music_id 或 effect_id。
+        因为本地库不原生支持添加不存在的云端资源。
         """
         import json
-        if not self._cloud_music_patches: return
+        if not self._cloud_audio_patches: return
 
         content_path = os.path.join(self.root, self.name, "draft_content.json")
         if not os.path.exists(content_path): return
@@ -769,10 +769,15 @@ class JyProject:
             audios = data.get("materials", {}).get("audios", [])
             for mat in audios:
                 path = mat.get("path", "")
-                for dummy_path, music_id in self._cloud_music_patches.items():
+                for dummy_path, patch_info in self._cloud_audio_patches.items():
                     if dummy_path in path:
-                        mat["music_id"] = music_id
-                        mat["type"] = "music" # 必须标记为 music 类型，剪映才会尝试同步
+                        if patch_info["type"] == "music":
+                            mat["music_id"] = patch_info["id"]
+                            mat["type"] = "music"
+                        else: # sfx
+                            mat["effect_id"] = patch_info["id"]
+                            mat["type"] = "sound"
+                        
                         # 注入其他必要的占位符以欺骗剪映
                         mat.setdefault("category_name", "推荐音乐")
                         mat.setdefault("category_id", "6678556627852856076")
@@ -781,9 +786,13 @@ class JyProject:
             if has_modified:
                 with open(content_path, 'w', encoding='utf-8') as f:
                     json.dump(data, f, ensure_ascii=False)
-                print(f"📡 Cloud Music Patched: Injected IDs for project '{self.name}'.")
+                print(f"📡 Cloud Audio Patched: Injected IDs for project '{self.name}'.")
         except Exception as e:
             print(f"⚠️ Cloud patching failed: {e}")
+
+    def _patch_cloud_music_ids(self):
+        # 兼容旧代码调用
+        self._patch_cloud_audio_ids()
 
     def _update_root_meta_info(self, draft_path: str, duration_us: int = 0):
         """
@@ -1050,10 +1059,39 @@ class JyProject:
         duration_us = int(float(duration_s) * 1000000)
         
         # 记录补丁信息。
-        dummy_path = f"CLOUD_PLACEHOLDER_{music_id}.mp3"
-        self._cloud_music_patches[dummy_path] = music_id
+        dummy_path = f"CLOUD_MUSIC_{music_id}.mp3"
+        self._cloud_audio_patches[dummy_path] = {"id": music_id, "type": "music"}
 
         # 使用 MockAudioMaterial 绕过文件系统检测
+        mat = MockAudioMaterial(
+            material_id=str(uuid.uuid4()).upper(),
+            duration=duration_us,
+            name=name,
+            path=os.path.join(self.draft_dir, dummy_path).replace("\\", "/")
+        )
+        
+        seg = draft.AudioSegment(
+            mat,
+            target_timerange=trange(start_us, duration_us),
+            source_timerange=trange(0, duration_us)
+        )
+        self.script.add_segment(seg, track_name)
+        return seg
+
+    def add_cloud_sfx(self, effect_id: str, name: str, duration_s: float, start_time: Union[str, int] = None, track_name: str = "SFX"):
+        """
+        [封装核心]: 添加一个未下载的云端音效引用 (SFX)。
+        """
+        if start_time is None:
+            start_time = self.get_track_duration(track_name)
+        self._ensure_track(draft.TrackType.audio, track_name)
+        
+        start_us = tim(start_time)
+        duration_us = int(float(duration_s) * 1000000)
+        
+        dummy_path = f"CLOUD_SFX_{effect_id}.mp3"
+        self._cloud_audio_patches[dummy_path] = {"id": effect_id, "type": "sfx"}
+
         mat = MockAudioMaterial(
             material_id=str(uuid.uuid4()).upper(),
             duration=duration_us,

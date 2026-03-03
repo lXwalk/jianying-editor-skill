@@ -1,7 +1,6 @@
-# JianYing Cloud Music Library (Music IDs Scanned from Projects)
-# AI Guidance: Use 'music_id' to reference. If found here but not in 'jy_cached_audio.csv', ask user to 'Sync Music'.
-# If not found here, ask user to add music to a track first, then run 'Scan Music' (build_cloud_music_library.py).
-# Schema: music_id,title,duration_s,categories
+# JianYing Cloud Music Library
+# AI Guidance: Use 'music_id' to reference. If not in cache, ask user to 'Sync Music' or use cloud API.
+# Schema: identifier,title,duration_s,categories
 music_id,title,duration_s,categories
 7086058997194689311,@摘星.创作的原声,14.0,douyin_collect
 7306575037883271169,Bad Tavern,62.0,流行
