@@ -1,0 +1,9 @@
+uiautomation
+playwright
+pynput
+edge-tts
+pymediainfo
+opencv-python
+numpy
+imageio
+psutil

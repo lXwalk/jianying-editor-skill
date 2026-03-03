@@ -43,8 +43,20 @@ project.add_web_code_vfx(html_code, start_time="0s", duration="5s")
 3.  **Resolution**: Default is 1920x1080.
 4.  **External Libs**: You can use CDNs (GSAP, Three.js, etc.).
 
-## When to use
-- Dynamic charts (Chart.js, D3)
-- Particle systems (Canvas confetti)
-- 3D models (Three.js)
-- Programmable typography
+## Recommended Libraries (CDNs)
+
+Specifically tested and recommended for high-quality video generation:
+- **GSAP**: The gold standard for web animations.
+- **Three.js**: For complex 3D scenes and object rendering.
+- **Chart.js / ECharts / D3.js**: Best for dynamic data visualization and animated charts.
+- **Canvas API**: For custom particle systems and procedural effects.
+- **Anime.js**: Lightweight alternative for CSS/SVG animations.
+
+## When to use (User Intent Mapping)
+
+Instead of just "vfx", think about these specific user scenarios:
+- **Data Stories**: "Show a growing bar chart of the top 10 movies." (Chart.js/D3)
+- **Tech Intros**: "Create a Matrix-style code rain intro for my coding channel." (Canvas)
+- **UI Walkthroughs**: "Record a realistic macOS notification slide-in." (HTML/CSS)
+- **Social Overlays**: "Add a glassmorphic 'Like & Subscribe' popup with a floating heart effect." (GSAP)
+- **3D Product Showcases**: "Show a rotating 3D model of a GPU." (Three.js)
