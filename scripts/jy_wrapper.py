@@ -1083,6 +1083,31 @@ class JyProject:
             
         return self.add_media_safe(media_path, target_start, duration, track_name, source_start=source_start, **kwargs)
 
+    # --- 8. 云端素材原生支持 (New) ---
+    def add_cloud_media(self, query: str, start_time: Union[str, int] = None, 
+                       duration: Union[str, int] = None, track_name: str = "VideoTrack"):
+        """
+        [云端直达]: 直接通过 ID 或名称添加云端素材。
+        自动查找本地库 -> 提取授权 URL -> 静默下载 -> 导入轨道。
+        """
+        try:
+            from cloud_manager import CloudManager
+        except ImportError:
+            # 兼容路径
+            sys.path.append(os.path.dirname(__file__))
+            from cloud_manager import CloudManager
+            
+        cm = CloudManager()
+        
+        # 1. 尝试获取本地缓存或下载
+        local_path = cm.download_asset(query)
+        if not local_path:
+            print(f"⚠️ Cloud asset '{query}' could not be resolved. Skipping.")
+            return None
+        
+        # 2. 调用常规导入逻辑
+        return self.add_media_safe(local_path, start_time, duration, track_name)
+
     def get_track_duration(self, track_name: str) -> int:
         """获取指定轨道当前的总时长（微秒）"""
         tracks = self.script.tracks

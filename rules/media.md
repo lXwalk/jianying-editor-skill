@@ -61,6 +61,11 @@ video_seg = project.add_media_safe(r"C:\assets\video.mp4", start_time="0s")
 # Import BGM (Audio)
 project.add_audio_safe(r"C:\assets\bgm.mp3", start_time="0s", track_name="BGM")
 
+# Import Cloud Asset (NEW)
+# Automatically searches, downloads, and imports from the cloud database
+project.add_cloud_media("海绵宝宝", start_time="5s", duration="2s")
+project.add_cloud_media("7322042077603302666", start_time="10s")
+
 # Import PIP (Picture in Picture)
 pip_seg = project.add_media_safe(r"C:\assets\facecam.mp4", start_time="5s", track_name="PipLayer")
 ```
