@@ -1085,28 +1085,74 @@ class JyProject:
 
     # --- 8. 云端素材原生支持 (New) ---
     def add_cloud_media(self, query: str, start_time: Union[str, int] = None, 
-                       duration: Union[str, int] = None, track_name: str = "VideoTrack"):
+                       duration: Union[str, int] = None, track_name: str = None):
         """
         [云端直达]: 直接通过 ID 或名称添加云端素材。
-        自动查找本地库 -> 提取授权 URL -> 静默下载 -> 导入轨道。
+        自动查找本地库 -> 提取授权 URL -> 静默下载 -> 导入最佳轨道。
         """
         try:
             from cloud_manager import CloudManager
         except ImportError:
-            # 兼容路径
             sys.path.append(os.path.dirname(__file__))
             from cloud_manager import CloudManager
             
         cm = CloudManager()
         
-        # 1. 尝试获取本地缓存或下载
+        # 1. 下载素材
         local_path = cm.download_asset(query)
         if not local_path:
-            print(f"⚠️ Cloud asset '{query}' could not be resolved. Skipping.")
             return None
         
-        # 2. 调用常规导入逻辑
-        return self.add_media_safe(local_path, start_time, duration, track_name)
+        # 2. 增强型分流逻辑：先查库里的 type，再看后缀
+        asset_info = cm.find_asset(query)
+        db_type = str(asset_info.get('type', '')).lower()
+        
+        # 即使文件是 .mp4，如果库里标记为 music/audio，也要作为音频处理
+        is_audio = any(k in db_type for k in ["music", "audio", "sound", "bgm", "音效", "歌曲", "歌"])
+        
+        if is_audio:
+            return self.add_audio_safe(local_path, start_time, duration, track_name or "AudioTrack")
+        else:
+            return self.add_media_safe(local_path, start_time, duration, track_name or "VideoTrack")
+
+    def add_narrated_subtitles(self, text: str, speaker: str = "zh_female_xiaopengyou", 
+                              start_time: Union[str, int] = None, track_name: str = "Subtitles"):
+        """
+        [完美对齐接口]: 将文本拆解成句，每句生成独立配音并与字幕完美对齐。
+        解决“一段大音频对应多段短文字”导致的语速偏差问题。
+        """
+        import re
+        if start_time is None: start_time = self.get_track_duration(track_name)
+        curr_us = tim(start_time)
+        
+        # 1. 拆分句子 (按标点)
+        parts = [p for p in re.split(r'([，。！？、\n\r]+)', text) if p.strip()]
+        # 重组 (文字+标点)
+        sentences = []
+        for i in range(0, len(parts), 2):
+            s = parts[i]
+            if i + 1 < len(parts): s += parts[i+1]
+            sentences.append(s.strip())
+
+        print(f"🎙️ Starting Narrated Subtitles: Split into {len(sentences)} parts.")
+        
+        for s in sentences:
+            clean_text = s.rstrip('，。！？、\n\r ')
+            if not clean_text: continue
+            
+            # 生成这一句的配音
+            audio_seg = self.add_tts_intelligent(clean_text, speaker=speaker, start_time=curr_us)
+            if audio_seg:
+                # 获取这句配音的实际物理时长
+                actual_dur_us = audio_seg.target_timerange.duration
+                
+                # 在同样的起始位置和时长添加字幕
+                self.add_text_simple(clean_text, start_time=curr_us, duration=actual_dur_us, track_name=track_name)
+                
+                # 递增指针 (并留 0.1s 气口)
+                curr_us += actual_dur_us + 100000 
+        
+        return curr_us
 
     def get_track_duration(self, track_name: str) -> int:
         """获取指定轨道当前的总时长（微秒）"""
