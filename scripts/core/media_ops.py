@@ -93,7 +93,15 @@ class MediaOpsMixin:
         """
         if start_time is None:
             start_time = self.get_track_duration("AudioTrack")
-            
+
+        # 优先使用真实本地缓存文件，避免生成虚拟路径导致“媒体丢失”提示。
+        # 若下载失败，再回退到旧的 mock 注入模式。
+        local_path = self.cloud_manager.download_asset(query)
+        if local_path and os.path.exists(local_path):
+            seg = self.add_audio_safe(local_path, start_time=start_time, duration=duration, track_name="AudioTrack")
+            if seg is not None:
+                return seg
+             
         # 1. 如果没给 duration_s，尝试查表
         actual_duration_s = duration_s
         if not actual_duration_s:
@@ -106,7 +114,7 @@ class MediaOpsMixin:
         final_dur_us = safe_tim(duration) if duration else int(actual_duration_s * 1000000)
         
         # 2. 注入 Patch
-        dummy_path = f"cloud_music_{query}.mp3"
+        dummy_path = local_path if (local_path and os.path.exists(local_path)) else f"cloud_music_{query}.mp3"
         self._cloud_audio_patches[dummy_path] = {"id": query, "type": "music"}
         
         # 3. 使用 Mock 素材
